@@ -35,3 +35,18 @@ func (r *PostRepository) GetAll(ctx context.Context) ([]model.Post, error) {
 	}
 	return posts, nil
 }
+
+func (r *PostRepository) GetPostById(ctx context.Context, postId string) ([]model.Post, error) {
+	cursor, err := r.collection.FindOne(postId)(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var posts []model.Post
+
+	if err = cursor.All(ctx, &posts); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
