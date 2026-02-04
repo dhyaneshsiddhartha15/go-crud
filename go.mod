@@ -1,4 +1,4 @@
-module github.com/yourusername/crud-go
+module github.com/dhyaneshsiddhartha15/crud-go
 
 go 1.24.0
 

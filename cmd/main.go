@@ -2,9 +2,14 @@ package main
 
 import (
 	"log"
+	"net/http"
 
-	"github.com/yourusername/crud-go/internal/config"
-	"github.com/yourusername/crud-go/internal/database"
+	"github.com/dhyaneshsiddhartha15/crud-go/internal/config"
+	"github.com/dhyaneshsiddhartha15/crud-go/internal/database"
+	"github.com/dhyaneshsiddhartha15/crud-go/internal/handler"
+	"github.com/dhyaneshsiddhartha15/crud-go/internal/repository"
+	"github.com/dhyaneshsiddhartha15/crud-go/internal/service"
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -14,5 +19,15 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
-	_ = db
+
+	postRepo := repository.NewPostRepository(db)
+	postService := service.NewPostService(postRepo)
+	postHandler := handler.NewPostHandler(postService)
+
+	r := mux.NewRouter()
+	r.HandleFunc("/api/posts", postHandler.GetAll).Methods("GET")
+	r.HandleFunc("/api/posts", postHandler.CreatePost).Methods("POST")
+
+	log.Printf("Server starting on :%s", cfg.ServerPort)
+	log.Fatal(http.ListenAndServe(":"+cfg.ServerPort, r))
 }
