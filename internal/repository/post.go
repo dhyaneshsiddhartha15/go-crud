@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
+	"log"
 
 	"github.com/dhyaneshsiddhartha15/crud-go/internal/model"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -33,20 +35,26 @@ func (r *PostRepository) GetAll(ctx context.Context) ([]model.Post, error) {
 	if err = cursor.All(ctx, &posts); err != nil {
 		return nil, err
 	}
+	for i, p := range posts {
+		log.Printf("[GetAll repo] post[%d] _id=%s (hex)", i, p.ID.Hex())
+	}
 	return posts, nil
 }
 
-func (r *PostRepository) GetPostById(ctx context.Context, postId string) ([]model.Post, error) {
-	cursor, err := r.collection.FindOne(postId)(ctx, bson.M{})
+func (r *PostRepository) GetByID(ctx context.Context, postID string) (*model.Post, error) {
+	objectID, err := primitive.ObjectIDFromHex(postID)
 	if err != nil {
+		log.Printf("[GetByID repo] ObjectIDFromHex failed: postID=%q err=%v", postID, err)
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	log.Printf("[GetByID repo] querying _id=%s (hex)", objectID.Hex())
 
-	var posts []model.Post
-
-	if err = cursor.All(ctx, &posts); err != nil {
+	var post model.Post
+	err = r.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&post)
+	if err != nil {
+		log.Printf("[GetByID repo] FindOne failed: err=%v", err)
 		return nil, err
 	}
-	return posts, nil
+	log.Printf("[GetByID repo] found post _id=%s", post.ID.Hex())
+	return &post, nil
 }

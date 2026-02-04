@@ -2,10 +2,14 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/dhyaneshsiddhartha15/crud-go/internal/model"
 	"github.com/dhyaneshsiddhartha15/crud-go/internal/service"
+	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PostHandler struct {
@@ -44,4 +48,36 @@ func (h *PostHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(posts)
+}
+
+func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	rawID := mux.Vars(r)["id"]
+	id := strings.TrimSpace(rawID)
+	log.Printf("[GetByID handler] raw id=%q len=%d, trimmed id=%q len=%d", rawID, len(rawID), id, len(id))
+
+	if id == "" {
+		http.Error(w, "Post ID required", http.StatusBadRequest)
+		return
+	}
+	if _, err := primitive.ObjectIDFromHex(id); err != nil {
+		log.Printf("[GetByID handler] invalid ObjectID: %v", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid post ID"})
+		return
+	}
+
+	post, err := h.service.GetByID(r.Context(), id)
+	if err != nil {
+		log.Printf("[GetByID handler] service error: %v", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Post not found"})
+		return
+	}
+	log.Printf("[GetByID handler] found post id=%s", post.ID.Hex())
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(post)
 }

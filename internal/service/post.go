@@ -49,3 +49,7 @@ func (s *PostService) GetAll(ctx context.Context) ([]model.Post, error) {
 	}
 	return posts, nil
 }
+func (s *PostService) GetByID(ctx context.Context, postID string) (*model.Post, error) {
+	log.Printf("[GetByID service] postID=%q len=%d", postID, len(postID))
+	return s.repo.GetByID(ctx, postID)
+}
